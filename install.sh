@@ -16,13 +16,68 @@ if ! command -v node &>/dev/null; then
 fi
 echo -e "\x1b[32m✔ Node.js detected:\x1b[0m $(node -v)"
 
+# Helper: Check and auto-install tmux (Arch Linux, Ubuntu/Debian, Fedora, macOS)
+ensure_tmux() {
+  if command -v tmux >/dev/null 2>&1; then
+    echo -e "\x1b[32m✔ tmux detected:\x1b[0m $(tmux -V)"
+    return 0
+  fi
+
+  echo -e "\x1b[33m⚠ tmux is required for background worker daemon monitoring.\x1b[0m"
+  echo "Attempting automatic installation..."
+
+  local INSTALL_CMD=""
+  local PKG_MANAGER=""
+
+  if command -v pacman >/dev/null 2>&1; then
+    PKG_MANAGER="pacman (Arch Linux)"
+    INSTALL_CMD="pacman -S --noconfirm tmux"
+  elif command -v apt-get >/dev/null 2>&1; then
+    PKG_MANAGER="apt (Ubuntu/Debian)"
+    INSTALL_CMD="apt-get update -qq && apt-get install -y tmux"
+  elif command -v dnf >/dev/null 2>&1; then
+    PKG_MANAGER="dnf (Fedora/RHEL)"
+    INSTALL_CMD="dnf install -y tmux"
+  elif command -v zypper >/dev/null 2>&1; then
+    PKG_MANAGER="zypper (openSUSE)"
+    INSTALL_CMD="zypper install -y tmux"
+  elif command -v apk >/dev/null 2>&1; then
+    PKG_MANAGER="apk (Alpine)"
+    INSTALL_CMD="apk add tmux"
+  elif command -v brew >/dev/null 2>&1; then
+    PKG_MANAGER="brew (Homebrew)"
+    INSTALL_CMD="brew install tmux"
+  fi
+
+  if [ -z "$INSTALL_CMD" ]; then
+    echo -e "\x1b[31m✖ Unsupported package manager. Please install tmux manually (e.g. 'sudo pacman -S tmux' or 'sudo apt install tmux').\x1b[0m" >&2
+    return 1
+  fi
+
+  echo "Detected package manager: ${PKG_MANAGER}"
+
+  if [ "$(id -u)" -eq 0 ]; then
+    eval "$INSTALL_CMD"
+  else
+    if command -v sudo >/dev/null 2>&1; then
+      echo "Requesting sudo permissions to install tmux..."
+      eval "sudo $INSTALL_CMD"
+    else
+      echo -e "\x1b[31m✖ 'sudo' not available. Please run: '$INSTALL_CMD' as root.\x1b[0m" >&2
+      return 1
+    fi
+  fi
+
+  if command -v tmux >/dev/null 2>&1; then
+    echo -e "\x1b[32m✔ Successfully installed tmux:\x1b[0m $(tmux -V)"
+  else
+    echo -e "\x1b[31m✖ Failed to verify tmux installation. Please install tmux manually.\x1b[0m" >&2
+    return 1
+  fi
+}
+
 # 2. Check Tmux
-if ! command -v tmux &>/dev/null; then
-  echo -e "\x1b[33m⚠ Warning: tmux is not installed. Background worker daemon requires tmux.\x1b[0m"
-  echo "  Install via: sudo apt install tmux"
-else
-  echo -e "\x1b[32m✔ tmux detected:\x1b[0m $(tmux -V)"
-fi
+ensure_tmux
 
 # 3. Create Runtime Dirs
 mkdir -p "${RUNTIME_DIR}/graphs"

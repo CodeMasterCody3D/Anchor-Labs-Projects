@@ -284,7 +284,15 @@ Closing Notes:
     const sub = args[1] || 'status';
     if (!checkTmuxInstalled()) {
       console.log('\x1b[31m✖ Error: tmux is not installed on this system.\x1b[0m');
-      console.log('  Please install tmux first: sudo apt install tmux');
+      let installCmd = 'sudo apt install -y tmux';
+      try {
+        if (execSync('which pacman 2>/dev/null', { encoding: 'utf8' }).trim()) {
+          installCmd = 'sudo pacman -S --noconfirm tmux';
+        } else if (execSync('which dnf 2>/dev/null', { encoding: 'utf8' }).trim()) {
+          installCmd = 'sudo dnf install -y tmux';
+        }
+      } catch {}
+      console.log(`  Please install tmux first: ${installCmd}`);
       process.exit(1);
     }
 
