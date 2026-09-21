@@ -1,9 +1,10 @@
 {
-  "name": "project-anchor",
+  "name": "anchor-labs-projects",
   "version": "1.0.0",
   "description": "Universal Software Project Anchor, Memory OS, Git Tracker & Visualizer for AI Agents & Developers",
   "main": "server/project-manager.js",
   "bin": {
+    "anchor-labs-projects": "./bin/project-anchor",
     "project-anchor": "./bin/project-anchor"
   },
   "scripts": {

@@ -2,7 +2,7 @@
 set -e
 
 echo -e "\x1b[1m\x1b[36m=====================================================\x1b[0m"
-echo -e "\x1b[1m\x1b[36m  PROJECT-ANCHOR INSTALLATION WIZARD\x1b[0m"
+echo -e "\x1b[1m\x1b[36m  ANCHOR-LABS-PROJECTS INSTALLATION WIZARD\x1b[0m"
 echo -e "\x1b[1m\x1b[36m=====================================================\x1b[0m"
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -34,8 +34,9 @@ chmod +x "${REPO_DIR}/server/"*.js
 chmod +x "${REPO_DIR}/daemon/"*.js
 chmod +x "${REPO_DIR}/claude-plugin/hooks/"*.js
 
+ln -sf "${REPO_DIR}/bin/project-anchor" "${BIN_DIR}/anchor-labs-projects"
 ln -sf "${REPO_DIR}/bin/project-anchor" "${BIN_DIR}/project-anchor"
-echo -e "\x1b[32m✔ Symlinked CLI:\x1b[0m ${BIN_DIR}/project-anchor"
+echo -e "\x1b[32m✔ Symlinked CLIs:\x1b[0m ${BIN_DIR}/anchor-labs-projects, ${BIN_DIR}/project-anchor"
 
 # 5. Install Claude Code Skills
 CLAUDE_SKILLS_DIR="${HOME}/.claude/skills/project-anchor"
@@ -47,5 +48,5 @@ echo -e "\x1b[32m✔ Claude Code slash commands installed to:\x1b[0m ${CLAUDE_SK
 echo -e "\n\x1b[1mRunning health verification...\x1b[0m"
 "${REPO_DIR}/bin/project-anchor" doctor
 
-echo -e "\x1b[32m✔ Project-Anchor successfully installed!\x1b[0m"
-echo "  Run 'project-anchor status' or 'project-anchor help' to get started."
+echo -e "\x1b[32m✔ Anchor-Labs-Projects successfully installed!\x1b[0m"
+echo "  Run 'anchor-labs-projects status' or 'anchor-labs-projects help' to get started."

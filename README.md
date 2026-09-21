@@ -1,8 +1,8 @@
-# Project-Anchor ⚓
+# Anchor-Labs-Projects ⚓
 
 > **Universal Software Project Anchor, Memory OS, Git Tracker & Visualizer for AI Agents & Developers**
 
-Project-Anchor is a general-purpose, persistent project management and memory operating system designed for human developers and autonomous AI coding agents (such as Claude Code, Antigravity, and MCP clients).
+Anchor-Labs-Projects is a general-purpose, persistent project management and memory operating system designed for human developers and autonomous AI coding agents (such as Claude Code, Antigravity, and MCP clients).
 
 It eliminates context drift, prevents destructive accidental commands, reconciles fuzzy memories against ground-truth git history, tracks tasks and test suites, and renders high-contrast, accessibility-compliant project visualizations.
 
@@ -13,7 +13,7 @@ It eliminates context drift, prevents destructive accidental commands, reconcile
 ```mermaid
 flowchart TD
   subgraph UserInterface["Client Interfaces"]
-    CLI["project-anchor CLI"]
+    CLI["anchor-labs-projects CLI"]
     Claude["Claude Code Skills & Slash Commands"]
     MCPClient["Any MCP Client / IDE"]
   end
@@ -23,7 +23,7 @@ flowchart TD
     SessionHooks["SessionStart / PromptSubmit / PostToolUse / Stop"]
   end
 
-  subgraph CoreServer["Project Anchor Core"]
+  subgraph CoreServer["Anchor Labs Core"]
     PM["ProjectManager (Git Status, Tasks, Tests, Executive Digest)"]
     Reconciler["3-Way Memory Reconciler (User vs Code vs Git)"]
     Synthesizer["Historical Synthesizer (Dossier & Failure Graveyard)"]
@@ -67,8 +67,8 @@ flowchart TD
 
 ```bash
 # Clone the repository
-git clone https://github.com/CodeMasterCody3D/project-anchor.git
-cd project-anchor
+git clone https://github.com/CodeMasterCody3D/Anchor-Labs-Projects.git
+cd Anchor-Labs-Projects
 
 # Run the installation wizard
 ./install.sh
@@ -76,35 +76,37 @@ cd project-anchor
 
 The installer:
 - Verifies Node.js and `tmux` availability.
-- Symlinks `project-anchor` CLI into `~/.local/bin/`.
+- Symlinks `anchor-labs-projects` and `project-anchor` CLI into `~/.local/bin/`.
 - Registers Claude Code skills and slash commands in `~/.claude/skills/project-anchor/`.
 - Runs a full environment diagnostic audit.
 
 ---
 
-## 🛠️ CLI Commands (`project-anchor`)
+## 🛠️ CLI Commands (`anchor-labs-projects` / `project-anchor`)
 
 | Command | Description |
 |---|---|
-| `project-anchor doctor` | Audits Node.js, tmux daemon, Git repository, and build toolchains |
-| `project-anchor status` | Displays full project snapshot and executive digest |
-| `project-anchor focus "<focus>" [milestone]` | Updates active project focus and milestone |
-| `project-anchor tasks [status]` | Lists project tasks (filters: `all`, `todo`, `in_progress`, `completed`) |
-| `project-anchor task add "<title>" [pri]` | Adds new task (`low`, `medium`, `high`, `critical`) |
-| `project-anchor task done <task-id>` | Marks task completed (e.g. `T-2`) |
-| `project-anchor test record <passed> <failed> [cov%]` | Records test run in project test ledger |
-| `project-anchor graph [type] [title]` | Generates SVG visualization (`test_trend`, `burndown`, `task_distribution`, `benchmark`, `module_metrics`, `radar`) |
-| `project-anchor reconcile "<memory>" [file]` | 3-way delta verification (User vs Code vs Git history) |
-| `project-anchor scan` | Scans commits and transcripts into `PROJECT_DOSSIER.md` & `FAILURE_GRAVEYARD.md` |
-| `project-anchor sweep <query>` | Greps past session transcripts for solutions and discussions |
-| `project-anchor handoff [notes]` | Generates morning handoff card for seamless next-session resumption |
-| `project-anchor daemon start\|status\|attach\|stop` | Controls persistent tmux background watcher |
+| `anchor-labs-projects doctor` | Audits Node.js, tmux daemon, Git repository, and build toolchains |
+| `anchor-labs-projects status` | Displays full project snapshot and executive digest |
+| `anchor-labs-projects focus "<focus>" [milestone]` | Updates active project focus and milestone |
+| `anchor-labs-projects tasks [status]` | Lists project tasks (filters: `all`, `todo`, `in_progress`, `completed`) |
+| `anchor-labs-projects task add "<title>" [pri]` | Adds new task (`low`, `medium`, `high`, `critical`) |
+| `anchor-labs-projects task done <task-id>` | Marks task completed (e.g. `T-2`) |
+| `anchor-labs-projects test record <passed> <failed> [cov%]` | Records test run in project test ledger |
+| `anchor-labs-projects graph [type] [title]` | Generates SVG visualization (`test_trend`, `burndown`, `task_distribution`, `benchmark`, `module_metrics`, `radar`) |
+| `anchor-labs-projects reconcile "<memory>" [file]` | 3-way delta verification (User vs Code vs Git history) |
+| `anchor-labs-projects scan` | Scans commits and transcripts into `PROJECT_DOSSIER.md` & `FAILURE_GRAVEYARD.md` |
+| `anchor-labs-projects sweep <query>` | Greps past session transcripts for solutions and discussions |
+| `anchor-labs-projects handoff [notes]` | Generates morning handoff card for seamless next-session resumption |
+| `anchor-labs-projects daemon start\|status\|attach\|stop` | Controls persistent tmux background watcher |
+
+*(Note: `project-anchor` is also available as a shorthand alias)*
 
 ---
 
 ## 💬 Claude Code Slash Commands
 
-Project-Anchor registers dedicated, collision-free slash commands for Claude Code:
+Anchor-Labs-Projects registers dedicated, collision-free slash commands for Claude Code:
 
 - `/panchor`: Displays project state, git branch, task breakdown, and test health.
 - `/ptask [list|add|done]`: Manages project task registry directly from chat.
@@ -117,16 +119,16 @@ Project-Anchor registers dedicated, collision-free slash commands for Claude Cod
 
 ---
 
-## 🔌 Universal MCP Server (`project-anchor-mcp`)
+## 🔌 Universal MCP Server (`anchor-labs-projects`)
 
-Project-Anchor includes a Model Context Protocol (MCP) server exposing 13 tools:
+Anchor-Labs-Projects includes a Model Context Protocol (MCP) server exposing 13 tools:
 
 ```json
 {
   "mcpServers": {
-    "project-anchor": {
+    "anchor-labs-projects": {
       "command": "node",
-      "args": ["/home/cody/project-anchor/server/mcp-server.js"]
+      "args": ["/home/cody/Anchor-Labs-Projects/server/mcp-server.js"]
     }
   }
 }

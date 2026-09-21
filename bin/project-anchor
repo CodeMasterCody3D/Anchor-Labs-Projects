@@ -28,35 +28,35 @@ function checkTmuxInstalled() {
 
 function printHelp() {
   console.log(`
-\x1b[1m\x1b[36mPROJECT-ANCHOR\x1b[0m — Universal Software Project Anchor & Memory OS
+\x1b[1m\x1b[36mANCHOR-LABS-PROJECTS\x1b[0m (alias: project-anchor) — Universal Software Project Anchor & Memory OS
 \x1b[90mGeneral-purpose development ledger, git tracker, 3-way memory reconciler & visualizer\x1b[0m
 
 \x1b[1mCORE COMMANDS:\x1b[0m
-  \x1b[32mproject-anchor doctor\x1b[0m                     Audit Node, tmux, Git, and build toolchains
-  \x1b[32mproject-anchor status\x1b[0m                     Display full project snapshot and executive digest
-  \x1b[32mproject-anchor focus <focus> [milestone]\x1b[0m  Update active project focus and target milestone
-  \x1b[32mproject-anchor handoff [notes]\x1b[0m            Generate morning handoff card for next session
+  \x1b[32manchor-labs-projects doctor\x1b[0m                     Audit Node, tmux, Git, and build toolchains
+  \x1b[32manchor-labs-projects status\x1b[0m                     Display full project snapshot and executive digest
+  \x1b[32manchor-labs-projects focus <focus> [milestone]\x1b[0m  Update active project focus and target milestone
+  \x1b[32manchor-labs-projects handoff [notes]\x1b[0m            Generate morning handoff card for next session
 
 \x1b[1mTASK MANAGEMENT:\x1b[0m
-  \x1b[32mproject-anchor tasks [status]\x1b[0m             List tasks (filter: all, todo, in_progress, completed)
-  \x1b[32mproject-anchor task add "<title>" [pri]\x1b[0m   Add new task (pri: low, medium, high, critical)
-  \x1b[32mproject-anchor task done <task-id>\x1b[0m        Mark task completed (e.g. T-1)
+  \x1b[32manchor-labs-projects tasks [status]\x1b[0m             List tasks (filter: all, todo, in_progress, completed)
+  \x1b[32manchor-labs-projects task add "<title>" [pri]\x1b[0m   Add new task (pri: low, medium, high, critical)
+  \x1b[32manchor-labs-projects task done <task-id>\x1b[0m        Mark task completed (e.g. T-1)
 
 \x1b[1mTESTS & METRICS:\x1b[0m
-  \x1b[32mproject-anchor test record <passed> <failed> [cov%]\x1b[0m  Log test execution results
-  \x1b[32mproject-anchor graph [type] [title]\x1b[0m        Generate clean SVG chart (types: test_trend,
-                                            burndown, task_distribution, benchmark, module_metrics, radar)
+  \x1b[32manchor-labs-projects test record <passed> <failed> [cov%]\x1b[0m  Log test execution results
+  \x1b[32manchor-labs-projects graph [type] [title]\x1b[0m        Generate clean SVG chart (types: test_trend,
+                                                 burndown, task_distribution, benchmark, module_metrics, radar)
 
 \x1b[1mINTELLIGENCE & RECONCILIATION:\x1b[0m
-  \x1b[32mproject-anchor reconcile "<memory>" [file]\x1b[0m 3-way delta verification (User vs Code vs Git history)
-  \x1b[32mproject-anchor scan\x1b[0m                       Synthesize PROJECT_DOSSIER.md & FAILURE_GRAVEYARD.md
-  \x1b[32mproject-anchor sweep <query>\x1b[0m              Search past session transcripts for solutions
+  \x1b[32manchor-labs-projects reconcile "<memory>" [file]\x1b[0m 3-way delta verification (User vs Code vs Git history)
+  \x1b[32manchor-labs-projects scan\x1b[0m                       Synthesize PROJECT_DOSSIER.md & FAILURE_GRAVEYARD.md
+  \x1b[32manchor-labs-projects sweep <query>\x1b[0m              Search past session transcripts for solutions
 
 \x1b[1mBACKGROUND DAEMON:\x1b[0m
-  \x1b[32mproject-anchor daemon start\x1b[0m               Launch persistent background tmux worker
-  \x1b[32mproject-anchor daemon status\x1b[0m              Check status of background daemon
-  \x1b[32mproject-anchor daemon attach\x1b[0m              Attach to live tmux worker session
-  \x1b[32mproject-anchor daemon stop\x1b[0m                Stop background daemon
+  \x1b[32manchor-labs-projects daemon start\x1b[0m               Launch persistent background tmux worker
+  \x1b[32manchor-labs-projects daemon status\x1b[0m              Check status of background daemon
+  \x1b[32manchor-labs-projects daemon attach\x1b[0m              Attach to live tmux worker session
+  \x1b[32manchor-labs-projects daemon stop\x1b[0m                Stop background daemon
 `);
 }
 
@@ -71,7 +71,7 @@ switch (command) {
     break;
 
   case 'doctor': {
-    console.log('\x1b[1m\x1b[34m[PROJECT-ANCHOR ENVIRONMENT AUDIT]\x1b[0m\n');
+    console.log('\x1b[1m\x1b[34m[ANCHOR-LABS-PROJECTS ENVIRONMENT AUDIT]\x1b[0m\n');
     const audit = auditor.runFullAudit(process.cwd());
     audit.checks.forEach(c => {
       const badge = c.status === 'OK' ? '\x1b[32m[OK]\x1b[0m' : c.status === 'WARN' ? '\x1b[33m[WARN]\x1b[0m' : '\x1b[31m[FAIL]\x1b[0m';
@@ -89,7 +89,7 @@ switch (command) {
     const latestTest = tests[tests.length - 1];
 
     console.log('\x1b[1m\x1b[36m=====================================================\x1b[0m');
-    console.log(`\x1b[1m\x1b[36m  PROJECT-ANCHOR STATE SNAPSHOT\x1b[0m`);
+    console.log(`\x1b[1m\x1b[36m  ANCHOR-LABS-PROJECTS STATE SNAPSHOT\x1b[0m`);
     console.log('\x1b[1m\x1b[36m=====================================================\x1b[0m');
     console.log(`  \x1b[1mActive Focus:\x1b[0m    ${conf.active_focus}`);
     console.log(`  \x1b[1mMilestone:\x1b[0m       ${conf.active_milestone}`);
