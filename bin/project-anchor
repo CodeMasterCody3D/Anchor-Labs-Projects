@@ -226,12 +226,19 @@ switch (command) {
   }
 
   case 'scan': {
-    console.log('\x1b[34mScanning project git commits & transcripts...\x1b[0m');
-    const res = synthesizer.scanProjectHistory(process.cwd());
+    const skipMemory = args.includes('--no-memory');
+    console.log(`\x1b[34mScanning project git commits, transcripts${skipMemory ? ' (skipping claude-mem)' : ' & claude-mem DB'}...\x1b[0m`);
+    const res = synthesizer.scanProjectHistory(process.cwd(), { skipMemory });
     console.log(`\x1b[32m✔ Project scan complete:\x1b[0m`);
     console.log(`  • Commits analyzed: ${res.commitsScanned}`);
-    console.log(`  • Dossier written: ${res.dossierPath} (${res.decisionsCount} decisions)`);
-    console.log(`  • Graveyard written: ${res.graveyardPath} (${res.trapsCount} traps)`);
+    console.log(`  • Architectural decisions: ${res.decisionsCount}`);
+    console.log(`  • Failure traps documented: ${res.trapsCount}`);
+    if (res.coverage && res.coverage.available) {
+      console.log(`  • claude-mem rows read: ${res.coverage.rows_read} (${res.coverage.earliest} -> ${res.coverage.latest})`);
+      console.log(`  • Recalled history entries: ${res.recalledCount} archived in HISTORICAL_ARCHIVE.json`);
+    }
+    console.log(`  • Dossier written: ${res.dossierPath}`);
+    console.log(`  • Graveyard written: ${res.graveyardPath}`);
     break;
   }
 
