@@ -8,12 +8,14 @@ const MemoryReconciler = require('../server/reconciler');
 const GraphEngine = require('../server/graph-engine');
 const HistoricalSynthesizer = require('../server/historical-synthesizer');
 const AuditWizard = require('../server/audit-wizard');
+const CliCatalog = require('../server/cli-catalog');
 
 const pm = new ProjectManager();
 const reconciler = new MemoryReconciler();
 const graphEngine = new GraphEngine();
 const synthesizer = new HistoricalSynthesizer();
 const auditor = new AuditWizard();
+const catalog = new CliCatalog();
 
 const TMUX_SESSION = 'project-anchor-worker';
 
@@ -52,6 +54,11 @@ function printHelp() {
   \x1b[32manchor-labs-projects reconcile "<memory>" [file]\x1b[0m 3-way delta verification (User vs Code vs Git history)
   \x1b[32manchor-labs-projects scan\x1b[0m                       Synthesize PROJECT_DOSSIER.md & FAILURE_GRAVEYARD.md
   \x1b[32manchor-labs-projects sweep <query>\x1b[0m              Search past session transcripts for solutions
+
+\x1b[1mTOOLCHAIN & CLI CATALOG:\x1b[0m
+  \x1b[32manchor-labs-projects tools\x1b[0m                       Scan & list project CLI tools, converters & build targets
+  \x1b[32manchor-labs-projects tool add <name> <cmd> [desc]\x1b[0m Register custom CLI tool or asset converter
+  \x1b[32manchor-labs-projects tool remove <name>\x1b[0m           Remove command from project registry
 
 \x1b[1mBACKGROUND DAEMON:\x1b[0m
   \x1b[32manchor-labs-projects daemon start\x1b[0m               Launch persistent background tmux worker
@@ -326,6 +333,46 @@ Closing Notes:
       } catch {
         console.log(`\x1b[90m○ Worker daemon "${TMUX_SESSION}" is INACTIVE.\x1b[0m`);
       }
+    }
+    break;
+  }
+
+  case 'tools':
+  case 'cli': {
+    console.log(catalog.renderCatalog(process.cwd()));
+    break;
+  }
+
+  case 'tool': {
+    const sub = args[1];
+    if (sub === 'add') {
+      const name = args[2];
+      const cmd = args[3];
+      const desc = args.slice(4).join(' ');
+      if (!name || !cmd) {
+        console.log('Usage: anchor-labs-projects tool add <name> <command> [description]');
+        break;
+      }
+      const res = catalog.registerTool({ name, command: cmd, description: desc });
+      if (res.success) {
+        console.log(`\x1b[32m✔ Registered tool:\x1b[0m ${name} (${cmd})`);
+      } else {
+        console.log(`\x1b[31m✖ Error:\x1b[0m ${res.error}`);
+      }
+    } else if (sub === 'remove' || sub === 'rm') {
+      const name = args[2];
+      if (!name) {
+        console.log('Usage: anchor-labs-projects tool remove <name>');
+        break;
+      }
+      const res = catalog.removeTool(name);
+      if (res.success) {
+        console.log(`\x1b[32m✔ Removed tool:\x1b[0m ${name}`);
+      } else {
+        console.log(`\x1b[31m✖ Error:\x1b[0m ${res.error}`);
+      }
+    } else {
+      console.log(catalog.renderCatalog(process.cwd()));
     }
     break;
   }

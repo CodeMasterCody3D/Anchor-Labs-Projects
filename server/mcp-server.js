@@ -5,12 +5,14 @@ const MemoryReconciler = require('./reconciler');
 const GraphEngine = require('./graph-engine');
 const HistoricalSynthesizer = require('./historical-synthesizer');
 const AuditWizard = require('./audit-wizard');
+const CliCatalog = require('./cli-catalog');
 
 const pm = new ProjectManager();
 const reconciler = new MemoryReconciler();
 const graphEngine = new GraphEngine();
 const synthesizer = new HistoricalSynthesizer();
 const auditor = new AuditWizard();
+const catalog = new CliCatalog();
 
 const TOOLS = [
   {
@@ -143,6 +145,37 @@ const TOOLS = [
     name: 'project_check',
     description: 'Audit project supervisor governance invariants (no drift, no unstructured web searches), historical scan progress, and background subagent tasks',
     inputSchema: { type: 'object', properties: { cwd: { type: 'string' } } }
+  },
+  {
+    name: 'project_discover_tools',
+    description: 'Scan repository for CLI commands, build targets, asset converters, game pipelines, and scripts',
+    inputSchema: { type: 'object', properties: { cwd: { type: 'string' } } }
+  },
+  {
+    name: 'project_register_tool',
+    description: 'Register a custom CLI tool, converter, or command shortcut into project registry',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Tool or shortcut name' },
+        command: { type: 'string', description: 'Shell command or script invocation' },
+        category: { type: 'string', description: 'Tool category (e.g. Asset Converter, Build System, Test Runner)' },
+        description: { type: 'string', description: 'Tool purpose and usage info' },
+        args: { type: 'string', description: 'Expected arguments and flags' }
+      },
+      required: ['name', 'command']
+    }
+  },
+  {
+    name: 'project_remove_tool',
+    description: 'Remove a custom tool or obsolete command from project registry',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Tool name to remove' }
+      },
+      required: ['name']
+    }
   }
 ];
 
@@ -247,6 +280,18 @@ Session Closing Notes:
       const checker = new AnchorChecker();
       const report = checker.renderReport(cwd);
       return { report, status: checker.getCheckStatus(cwd) };
+    }
+    case 'project_discover_tools': {
+      return {
+        catalog: catalog.scanProject(cwd),
+        formatted: catalog.renderCatalog(cwd)
+      };
+    }
+    case 'project_register_tool': {
+      return catalog.registerTool(args);
+    }
+    case 'project_remove_tool': {
+      return catalog.removeTool(args.name);
     }
     default:
       throw new Error(`Unknown tool: ${name}`);

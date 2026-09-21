@@ -60,8 +60,22 @@ flowchart TD
    - Strictly focuses on data with zero intrusive color theory meta-text on the charts.
 5. **Historical Synthesizer & Failure Graveyard**: Scans git commit logs and past session transcripts to catalog architectural decisions (`PROJECT_DOSSIER.md`) and prevent recurring traps (`FAILURE_GRAVEYARD.md`).
 6. **Persistent Background Daemon (`project-anchor-worker`)**: Runs inside a dedicated tmux session to track git events, record test results, and refresh the instant session cache.
+7. **Toolchain & CLI Discovery Engine (Game Dev Ready)**:
+   - Automatically scans repositories for build scripts (`CMakeLists.txt`, `Makefile`, `package.json`), custom executables (`tools/`, `scripts/`, `bin/`), and argument usages.
+   - Built-in **Game Dev Asset Pipeline Detector**: Identifies game models/shapes (`.dts`, `.dae`, `.gltf`), interiors and maps (`.dif`, `.mis`, `.ter`), textures (`.dds`, `.png`), scripts (`TorqueScript` / `.cs`), and audio assets (specifically tailored for classic game conversions like Tribes 2 / Torque Engine porting).
+   - Dynamic custom command registry: Add or remove project CLI tools as your test and build requirements evolve.
 
 ---
+
+## 📋 Recommended Setup: CLAUDE.md
+
+This repository includes a battle-tested [`CLAUDE.md`](CLAUDE.md) designed to enforce engineering discipline, prevent hallucinations, block collateral kills of running processes, and stop AI agents from hand-rolling brittle scripts.
+
+> **Recommended**: Copy this repository's [`CLAUDE.md`](CLAUDE.md) directly into your project's root directory (or append its guardrails to your existing `CLAUDE.md`):
+> ```bash
+> cp path/to/Anchor-Labs-Projects/CLAUDE.md /path/to/your-project/CLAUDE.md
+> ```
+> Claude Code will automatically detect it and adhere to these strict guardrails on any project.
 
 ## 🚀 Quick Start & Installation
 
@@ -98,8 +112,11 @@ The installer:
 | `anchor-labs-projects reconcile "<memory>" [file]` | 3-way delta verification (User vs Code vs Git history) |
 | `anchor-labs-projects scan` | Scans commits and transcripts into `PROJECT_DOSSIER.md` & `FAILURE_GRAVEYARD.md` |
 | `anchor-labs-projects sweep <query>` | Greps past session transcripts for solutions and discussions |
+| `anchor-labs-projects tools` | Scans repository for CLI tools, converters, build scripts, and game dev pipelines |
+| `anchor-labs-projects tool add <name> <cmd> [desc]` | Registers a custom command, converter, or helper shortcut |
+| `anchor-labs-projects tool remove <name>` | Removes an obsolete command from project registry |
 | `anchor-labs-projects handoff [notes]` | Generates morning handoff card for seamless next-session resumption |
-| `anchor-labs-projects daemon start\|status\|attach\|stop` | Controls persistent tmux background watcher |
+| `anchor-labs-projects daemon start|status|attach|stop` | Controls persistent tmux background watcher |
 
 *(Note: `project-anchor` is also available as a shorthand alias)*
 
@@ -110,6 +127,7 @@ The installer:
 Anchor-Labs-Projects registers dedicated, collision-free slash commands for Claude Code:
 
 - `/panchor`: Displays project state, git branch, task breakdown, and test health.
+- `/ptools`: Scans project toolchain, CLI commands, asset pipelines (Tribes/Torque formats: DTS, DIF, TER, CS), and build targets (alias `/pcli`).
 - `/ptask [list|add|done]`: Manages project task registry directly from chat.
 - `/pscan`: Runs the architectural scanner and catalogs failure traps.
 - `/psweep <query>`: Deep transcript search for previous solutions.
@@ -123,7 +141,7 @@ Anchor-Labs-Projects registers dedicated, collision-free slash commands for Clau
 
 ## 🔌 Universal MCP Server (`anchor-labs-projects`)
 
-Anchor-Labs-Projects includes a Model Context Protocol (MCP) server exposing 14 tools:
+Anchor-Labs-Projects includes a Model Context Protocol (MCP) server exposing 17 tools:
 
 ```json
 {

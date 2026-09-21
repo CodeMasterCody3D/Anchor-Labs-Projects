@@ -22,8 +22,10 @@
 4. **Never re-offer to execute a parked plan.**
    - Present the plan, state where it is stored, and **stop**.
    - An explicit go-ahead ("let's do it", "go", "proceed") is required before mutating code.
-5. **Never defer or ignore mid-run user orders.**
-   - If the user says "stop", "change this", or "pivot", take action immediately. Kill running processes, revert unwanted edits, or state the exact tradeoff in one sentence.
+5. **Targeted mid-run order handling (No collateral process killing).**
+   - If the user asks to edit, fix, or change something during an active run, ONLY terminate a running process if it is the EXACT process being modified or conflicting with the edit.
+   - Never terminate unrelated background processes, daemons, watchers, or long-running builds.
+   - If uncertain whether an active process conflicts with the requested change, **ASK the user first** before killing anything: *"Should I stop [process name/PID] before making this edit?"*
 6. **No destructive shell operations.**
    - Never run `rm -rf`, `git reset --hard`, `git clean -fd`, or force pushes (`--force`) without explicit confirmation.
    - Always check git status (`git status --porcelain`) before running git commands.
