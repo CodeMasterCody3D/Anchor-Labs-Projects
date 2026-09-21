@@ -1,0 +1,22 @@
+{
+  "SessionStart": {
+    "command": "node",
+    "args": ["hooks/on-session-start.js"]
+  },
+  "UserPromptSubmit": {
+    "command": "node",
+    "args": ["hooks/on-prompt-submit.js"]
+  },
+  "PreToolUse": {
+    "command": "node",
+    "args": ["hooks/on-pre-tool.js"]
+  },
+  "PostToolUse": {
+    "command": "node",
+    "args": ["hooks/on-post-tool.js"]
+  },
+  "SessionStop": {
+    "command": "node",
+    "args": ["hooks/on-stop.js"]
+  }
+}

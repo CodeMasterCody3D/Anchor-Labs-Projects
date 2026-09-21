@@ -1,0 +1,8 @@
+{
+  "name": "project-anchor",
+  "version": "1.0.0",
+  "description": "Universal software project anchor, memory reconciler, git tracker, and visualizer for Claude Code",
+  "author": "CodeMasterCody3D",
+  "keywords": ["project-management", "git", "tests", "memory-reconciler", "visualization", "developer-safety"],
+  "hooks": "./hooks/hooks.json"
+}

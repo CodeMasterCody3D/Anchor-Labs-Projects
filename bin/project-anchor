@@ -1,0 +1,320 @@
+#!/usr/bin/env node
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+
+const ProjectManager = require('../server/project-manager');
+const MemoryReconciler = require('../server/reconciler');
+const GraphEngine = require('../server/graph-engine');
+const HistoricalSynthesizer = require('../server/historical-synthesizer');
+const AuditWizard = require('../server/audit-wizard');
+
+const pm = new ProjectManager();
+const reconciler = new MemoryReconciler();
+const graphEngine = new GraphEngine();
+const synthesizer = new HistoricalSynthesizer();
+const auditor = new AuditWizard();
+
+const TMUX_SESSION = 'project-anchor-worker';
+
+function checkTmuxInstalled() {
+  try {
+    execSync('which tmux 2>/dev/null', { encoding: 'utf8' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function printHelp() {
+  console.log(`
+\x1b[1m\x1b[36mPROJECT-ANCHOR\x1b[0m — Universal Software Project Anchor & Memory OS
+\x1b[90mGeneral-purpose development ledger, git tracker, 3-way memory reconciler & visualizer\x1b[0m
+
+\x1b[1mCORE COMMANDS:\x1b[0m
+  \x1b[32mproject-anchor doctor\x1b[0m                     Audit Node, tmux, Git, and build toolchains
+  \x1b[32mproject-anchor status\x1b[0m                     Display full project snapshot and executive digest
+  \x1b[32mproject-anchor focus <focus> [milestone]\x1b[0m  Update active project focus and target milestone
+  \x1b[32mproject-anchor handoff [notes]\x1b[0m            Generate morning handoff card for next session
+
+\x1b[1mTASK MANAGEMENT:\x1b[0m
+  \x1b[32mproject-anchor tasks [status]\x1b[0m             List tasks (filter: all, todo, in_progress, completed)
+  \x1b[32mproject-anchor task add "<title>" [pri]\x1b[0m   Add new task (pri: low, medium, high, critical)
+  \x1b[32mproject-anchor task done <task-id>\x1b[0m        Mark task completed (e.g. T-1)
+
+\x1b[1mTESTS & METRICS:\x1b[0m
+  \x1b[32mproject-anchor test record <passed> <failed> [cov%]\x1b[0m  Log test execution results
+  \x1b[32mproject-anchor graph [type] [title]\x1b[0m        Generate clean SVG chart (types: test_trend,
+                                            burndown, task_distribution, benchmark, module_metrics, radar)
+
+\x1b[1mINTELLIGENCE & RECONCILIATION:\x1b[0m
+  \x1b[32mproject-anchor reconcile "<memory>" [file]\x1b[0m 3-way delta verification (User vs Code vs Git history)
+  \x1b[32mproject-anchor scan\x1b[0m                       Synthesize PROJECT_DOSSIER.md & FAILURE_GRAVEYARD.md
+  \x1b[32mproject-anchor sweep <query>\x1b[0m              Search past session transcripts for solutions
+
+\x1b[1mBACKGROUND DAEMON:\x1b[0m
+  \x1b[32mproject-anchor daemon start\x1b[0m               Launch persistent background tmux worker
+  \x1b[32mproject-anchor daemon status\x1b[0m              Check status of background daemon
+  \x1b[32mproject-anchor daemon attach\x1b[0m              Attach to live tmux worker session
+  \x1b[32mproject-anchor daemon stop\x1b[0m                Stop background daemon
+`);
+}
+
+const args = process.argv.slice(2);
+const command = args[0] || 'status';
+
+switch (command) {
+  case 'help':
+  case '--help':
+  case '-h':
+    printHelp();
+    break;
+
+  case 'doctor': {
+    console.log('\x1b[1m\x1b[34m[PROJECT-ANCHOR ENVIRONMENT AUDIT]\x1b[0m\n');
+    const audit = auditor.runFullAudit(process.cwd());
+    audit.checks.forEach(c => {
+      const badge = c.status === 'OK' ? '\x1b[32m[OK]\x1b[0m' : c.status === 'WARN' ? '\x1b[33m[WARN]\x1b[0m' : '\x1b[31m[FAIL]\x1b[0m';
+      console.log(`  ${badge} \x1b[1m${c.component.padEnd(22)}\x1b[0m : ${c.details}`);
+    });
+    console.log(`\n\x1b[1mVerdict:\x1b[0m ${audit.summary}\n`);
+    break;
+  }
+
+  case 'status': {
+    const git = pm.getGitInfo(process.cwd());
+    const conf = pm.getConfig();
+    const tasks = pm.getTasks();
+    const tests = pm.getTestHistory();
+    const latestTest = tests[tests.length - 1];
+
+    console.log('\x1b[1m\x1b[36m=====================================================\x1b[0m');
+    console.log(`\x1b[1m\x1b[36m  PROJECT-ANCHOR STATE SNAPSHOT\x1b[0m`);
+    console.log('\x1b[1m\x1b[36m=====================================================\x1b[0m');
+    console.log(`  \x1b[1mActive Focus:\x1b[0m    ${conf.active_focus}`);
+    console.log(`  \x1b[1mMilestone:\x1b[0m       ${conf.active_milestone}`);
+    console.log(`  \x1b[1mGit Branch:\x1b[0m      [${git.branch}] ${git.isClean ? '\x1b[32mClean\x1b[0m' : `\x1b[33m${git.modifiedCount} modified\x1b[0m`}`);
+    console.log(`  \x1b[1mLast Commit:\x1b[0m     ${git.lastCommit}`);
+
+    const inProgress = tasks.filter(t => t.status === 'in_progress');
+    const todo = tasks.filter(t => t.status === 'todo');
+    const completed = tasks.filter(t => t.status === 'completed');
+
+    console.log(`\n  \x1b[1mTasks:\x1b[0m           Total: ${tasks.length} (\x1b[32m${completed.length} done\x1b[0m, \x1b[36m${inProgress.length} active\x1b[0m, \x1b[33m${todo.length} todo\x1b[0m)`);
+    if (inProgress.length > 0) {
+      inProgress.forEach(t => console.log(`    \x1b[36m▶\x1b[0m [${t.id}] ${t.title} (\x1b[1m${t.priority}\x1b[0m)`));
+    }
+
+    if (latestTest) {
+      console.log(`\n  \x1b[1mLatest Test:\x1b[0m     ${latestTest.suite} - \x1b[32m${latestTest.passed} passed\x1b[0m, \x1b[31m${latestTest.failed} failed\x1b[0m (${latestTest.coverage_pct}% cov)`);
+    }
+
+    // Check daemon
+    let daemonRunning = false;
+    if (checkTmuxInstalled()) {
+      try {
+        const out = execSync(`tmux has-session -t ${TMUX_SESSION} 2>/dev/null`, { encoding: 'utf8' });
+        daemonRunning = true;
+      } catch {}
+    }
+    console.log(`  \x1b[1mWorker Daemon:\x1b[0m   ${daemonRunning ? '\x1b[32m● Running (tmux: ' + TMUX_SESSION + ')\x1b[0m' : '\x1b[90m○ Inactive\x1b[0m'}`);
+    console.log('\x1b[1m\x1b[36m=====================================================\x1b[0m\n');
+    break;
+  }
+
+  case 'focus': {
+    const focusText = args[1];
+    const milestoneText = args[2] || '';
+    if (!focusText) {
+      console.log('Usage: project-anchor focus "<focus>" [milestone]');
+      process.exit(1);
+    }
+    const updated = pm.setFocus(focusText, milestoneText);
+    console.log(`\x1b[32m✔ Project focus updated:\x1b[0m "${updated.active_focus}" [${updated.active_milestone}]`);
+    break;
+  }
+
+  case 'tasks': {
+    const filter = args[1];
+    let tasks = pm.getTasks();
+    if (filter && filter !== 'all') {
+      tasks = tasks.filter(t => t.status === filter);
+    }
+    console.log(`\n\x1b[1mPROJECT TASKS (${tasks.length})\x1b[0m:`);
+    tasks.forEach(t => {
+      const badge = t.status === 'completed' ? '\x1b[32m[DONE]\x1b[0m' : t.status === 'in_progress' ? '\x1b[36m[ACTV]\x1b[0m' : '\x1b[33m[TODO]\x1b[0m';
+      console.log(`  ${badge} \x1b[1m${t.id.padEnd(5)}\x1b[0m ${t.title.padEnd(50)} (\x1b[90m${t.priority}\x1b[0m)`);
+    });
+    console.log('');
+    break;
+  }
+
+  case 'task': {
+    const sub = args[1];
+    if (sub === 'add') {
+      const title = args[2];
+      const priority = args[3] || 'medium';
+      if (!title) {
+        console.log('Usage: project-anchor task add "<title>" [priority]');
+        process.exit(1);
+      }
+      const t = pm.addTask({ title, priority });
+      console.log(`\x1b[32m✔ Added task [${t.id}]:\x1b[0m ${t.title} (${t.priority})`);
+    } else if (sub === 'done' || sub === 'complete') {
+      const id = args[2];
+      if (!id) {
+        console.log('Usage: project-anchor task done <task-id>');
+        process.exit(1);
+      }
+      const t = pm.completeTask(id);
+      if (t) {
+        console.log(`\x1b[32m✔ Completed task [${t.id}]:\x1b[0m ${t.title}`);
+      } else {
+        console.log(`\x1b[31m✖ Task not found: ${id}\x1b[0m`);
+      }
+    } else {
+      console.log('Usage: project-anchor task add|done ...');
+    }
+    break;
+  }
+
+  case 'test': {
+    const sub = args[1];
+    if (sub === 'record') {
+      const passed = parseInt(args[2] || '0', 10);
+      const failed = parseInt(args[3] || '0', 10);
+      const coverage = parseFloat(args[4] || '0');
+      const rec = pm.recordTestRun({ passed, failed, coverage_pct: coverage });
+      console.log(`\x1b[32m✔ Recorded test run:\x1b[0m ${rec.passed} passed, ${rec.failed} failed, ${rec.coverage_pct}% coverage`);
+    } else {
+      console.log('Usage: project-anchor test record <passed> <failed> [coverage_pct]');
+    }
+    break;
+  }
+
+  case 'graph': {
+    const type = args[1];
+    const title = args[2];
+    const res = graphEngine.generateChart({
+      type,
+      title,
+      data: type === 'test_trend' ? pm.getTestHistory() : pm.getTasks()
+    });
+    console.log(`\x1b[32m✔ Generated SVG chart [${res.type}]:\x1b[0m ${res.filePath}`);
+    break;
+  }
+
+  case 'reconcile': {
+    const assumption = args[1];
+    const targetFile = args[2];
+    const symbol = args[3];
+    if (!assumption) {
+      console.log('Usage: project-anchor reconcile "<rememberedAssumption>" [targetFile] [symbol]');
+      process.exit(1);
+    }
+    const report = reconciler.reconcile({ rememberedAssumption: assumption, targetFile, symbolName: symbol });
+    console.log('\n' + report + '\n');
+    break;
+  }
+
+  case 'scan': {
+    console.log('\x1b[34mScanning project git commits & transcripts...\x1b[0m');
+    const res = synthesizer.scanProjectHistory(process.cwd());
+    console.log(`\x1b[32m✔ Project scan complete:\x1b[0m`);
+    console.log(`  • Commits analyzed: ${res.commitsScanned}`);
+    console.log(`  • Dossier written: ${res.dossierPath} (${res.decisionsCount} decisions)`);
+    console.log(`  • Graveyard written: ${res.graveyardPath} (${res.trapsCount} traps)`);
+    break;
+  }
+
+  case 'sweep': {
+    const query = args[1];
+    if (!query) {
+      console.log('Usage: project-anchor sweep <query>');
+      process.exit(1);
+    }
+    const matches = synthesizer.sweepTranscripts(query);
+    console.log(`\n\x1b[1mTranscript Matches for "${query}" (${matches.length}):\x1b[0m`);
+    matches.forEach(m => {
+      console.log(`  \x1b[36m• [${m.file}]\x1b[0m ${m.snippet}`);
+    });
+    console.log('');
+    break;
+  }
+
+  case 'handoff': {
+    const notes = args.slice(1).join(' ') || '';
+    const git = pm.getGitInfo(process.cwd());
+    const tasks = pm.getTasks();
+    const conf = pm.getConfig();
+    const inProgress = tasks.filter(t => t.status === 'in_progress');
+    const todo = tasks.filter(t => t.status === 'todo');
+
+    console.log(`
+\x1b[1m\x1b[35m=====================================================\x1b[0m
+\x1b[1m\x1b[35m[PROJECT-ANCHOR MORNING HANDOFF CARD]\x1b[0m
+Generated: ${new Date().toISOString()}
+Focus: ${conf.active_focus} | Milestone: ${conf.active_milestone}
+Branch: ${git.branch} (${git.isClean ? 'Clean working tree' : `${git.modifiedCount} uncommitted files`})
+Last Commit: ${git.lastCommit}
+-----------------------------------------------------
+Active Work Left In-Flight:
+${inProgress.length > 0 ? inProgress.map(t => `  • [${t.id}] ${t.title}`).join('\n') : '  • No in-progress tasks.'}
+
+Top Priority For Next Session:
+${todo.length > 0 ? `  • [${todo[0].id}] ${todo[0].title}` : '  • Backlog clear.'}
+
+Closing Notes:
+  ${notes || 'Clean session wrap. Ready for next phase.'}
+\x1b[1m\x1b[35m=====================================================\x1b[0m
+`);
+    break;
+  }
+
+  case 'daemon': {
+    const sub = args[1] || 'status';
+    if (!checkTmuxInstalled()) {
+      console.log('\x1b[31m✖ Error: tmux is not installed on this system.\x1b[0m');
+      console.log('  Please install tmux first: sudo apt install tmux');
+      process.exit(1);
+    }
+
+    if (sub === 'start') {
+      try {
+        execSync(`tmux has-session -t ${TMUX_SESSION} 2>/dev/null`);
+        console.log(`\x1b[33mWorker session "${TMUX_SESSION}" is already running.\x1b[0m`);
+      } catch {
+        const daemonScript = path.join(__dirname, '../daemon/watcher.js');
+        execSync(`tmux new-session -d -s ${TMUX_SESSION} "node ${daemonScript}"`);
+        console.log(`\x1b[32m✔ Background worker session started: ${TMUX_SESSION}\x1b[0m`);
+      }
+    } else if (sub === 'stop') {
+      try {
+        execSync(`tmux kill-session -t ${TMUX_SESSION} 2>/dev/null`);
+        console.log(`\x1b[32m✔ Background worker session "${TMUX_SESSION}" stopped.\x1b[0m`);
+      } catch {
+        console.log(`\x1b[90mSession "${TMUX_SESSION}" was not running.\x1b[0m`);
+      }
+    } else if (sub === 'attach') {
+      console.log(`Attaching to tmux session "${TMUX_SESSION}" (detach with Ctrl+B then D)...`);
+      try {
+        execSync(`tmux attach-session -t ${TMUX_SESSION}`, { stdio: 'inherit' });
+      } catch (err) {
+        console.log(`\x1b[31mCould not attach: ${err.message}\x1b[0m`);
+      }
+    } else if (sub === 'status') {
+      try {
+        execSync(`tmux has-session -t ${TMUX_SESSION} 2>/dev/null`);
+        console.log(`\x1b[32m● Worker daemon "${TMUX_SESSION}" is ACTIVE.\x1b[0m`);
+      } catch {
+        console.log(`\x1b[90m○ Worker daemon "${TMUX_SESSION}" is INACTIVE.\x1b[0m`);
+      }
+    }
+    break;
+  }
+
+  default:
+    console.log(`Unknown command: ${command}`);
+    printHelp();
+    process.exit(1);
+}
