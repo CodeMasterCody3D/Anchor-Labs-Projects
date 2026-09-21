@@ -34,6 +34,7 @@ function printHelp() {
 \x1b[1mCORE COMMANDS:\x1b[0m
   \x1b[32manchor-labs-projects doctor\x1b[0m                     Audit Node, tmux, Git, and build toolchains
   \x1b[32manchor-labs-projects status\x1b[0m                     Display full project snapshot and executive digest
+  \x1b[32manchor-labs-projects check\x1b[0m                      Audit supervisor governance, scan progress & subagents
   \x1b[32manchor-labs-projects focus <focus> [milestone]\x1b[0m  Update active project focus and target milestone
   \x1b[32manchor-labs-projects handoff [notes]\x1b[0m            Generate morning handoff card for next session
 
@@ -119,6 +120,13 @@ switch (command) {
     }
     console.log(`  \x1b[1mWorker Daemon:\x1b[0m   ${daemonRunning ? '\x1b[32m● Running (tmux: ' + TMUX_SESSION + ')\x1b[0m' : '\x1b[90m○ Inactive\x1b[0m'}`);
     console.log('\x1b[1m\x1b[36m=====================================================\x1b[0m\n');
+    break;
+  }
+
+  case 'check': {
+    const AnchorChecker = require('../server/anchor-checker');
+    const checker = new AnchorChecker();
+    console.log(checker.renderReport(process.cwd()));
     break;
   }
 

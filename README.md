@@ -88,6 +88,7 @@ The installer:
 |---|---|
 | `anchor-labs-projects doctor` | Audits Node.js, tmux daemon, Git repository, and build toolchains |
 | `anchor-labs-projects status` | Displays full project snapshot and executive digest |
+| `anchor-labs-projects check` | Audits supervisor governance, historical scan progress, and background subagents |
 | `anchor-labs-projects focus "<focus>" [milestone]` | Updates active project focus and milestone |
 | `anchor-labs-projects tasks [status]` | Lists project tasks (filters: `all`, `todo`, `in_progress`, `completed`) |
 | `anchor-labs-projects task add "<title>" [pri]` | Adds new task (`low`, `medium`, `high`, `critical`) |
@@ -115,13 +116,14 @@ Anchor-Labs-Projects registers dedicated, collision-free slash commands for Clau
 - `/pgraph [type]`: Generates high-contrast project visualizations.
 - `/preconcile "<memory>" [file]`: Runs 3-way delta verification when assumptions feel outdated.
 - `/phandoff [notes]`: Formulates morning handoff card before closing a session.
+- `/pcheck`: Audits project supervisor governance, historical scan progress, and subagents (alias `/panchorcheck`).
 - `/phelp`: Displays full command cheat sheet.
 
 ---
 
 ## 🔌 Universal MCP Server (`anchor-labs-projects`)
 
-Anchor-Labs-Projects includes a Model Context Protocol (MCP) server exposing 13 tools:
+Anchor-Labs-Projects includes a Model Context Protocol (MCP) server exposing 14 tools:
 
 ```json
 {
@@ -148,6 +150,7 @@ Anchor-Labs-Projects includes a Model Context Protocol (MCP) server exposing 13 
 11. `project_generate_graph`: Render SVG charts.
 12. `project_audit`: Run dependency and toolchain audit.
 13. `project_handoff`: Generate end-of-session handoff card.
+14. `project_check`: Audit supervisor governance invariants, scan progress, and subagents.
 
 ---
 

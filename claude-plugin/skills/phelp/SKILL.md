@@ -16,11 +16,14 @@ Slash Commands:
   /pgraph [type]        Generate clean SVG chart (test_trend, burndown, radar, etc.)
   /preconcile "<memory>" [file] 3-way delta verification (User vs Code vs Git history)
   /phandoff [notes]     Generate end-of-session handoff card
+  /pcheck               Audit supervisor governance, historical scan & subagents
+  /panchorcheck         Full alias for /pcheck
   /phelp                Show this command directory
 
-CLI Commands (project-anchor <cmd>):
+CLI Commands (anchor-labs-projects <cmd> or project-anchor <cmd>):
   doctor                Audit Node.js, tmux daemon, Git, and build tools
   status                Full project snapshot and executive digest
+  check                 Audit supervisor governance, scan progress & subagents
   focus <text>          Set active project focus & milestone
   tasks                 Interactive task list
   task add|done         Add or complete tasks

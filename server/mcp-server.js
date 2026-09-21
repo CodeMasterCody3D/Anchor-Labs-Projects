@@ -138,6 +138,11 @@ const TOOLS = [
     name: 'project_handoff',
     description: 'Generate an end-of-session handoff summary for seamless next-morning pickup',
     inputSchema: { type: 'object', properties: { notes: { type: 'string' } } }
+  },
+  {
+    name: 'project_check',
+    description: 'Audit project supervisor governance invariants (no drift, no unstructured web searches), historical scan progress, and background subagent tasks',
+    inputSchema: { type: 'object', properties: { cwd: { type: 'string' } } }
   }
 ];
 
@@ -236,6 +241,12 @@ Session Closing Notes:
 =====================================================
 `.trim();
       return { handoff };
+    }
+    case 'project_check': {
+      const AnchorChecker = require('./anchor-checker');
+      const checker = new AnchorChecker();
+      const report = checker.renderReport(cwd);
+      return { report, status: checker.getCheckStatus(cwd) };
     }
     default:
       throw new Error(`Unknown tool: ${name}`);

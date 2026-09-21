@@ -9,56 +9,116 @@ class HistoricalSynthesizer {
     if (!fs.existsSync(this.runtimeDir)) {
       fs.mkdirSync(this.runtimeDir, { recursive: true });
     }
+    this.statusFile = path.join(this.runtimeDir, 'historical_status.json');
   }
 
-  scanProjectHistory(cwd = process.cwd()) {
-    let gitCommits = [];
+  writeStatus(statusObj) {
     try {
-      const logOutput = execSync('git log -n 50 --format="%h|%an|%ad|%s" --date=short 2>/dev/null', { cwd, encoding: 'utf8' }).trim();
-      if (logOutput) {
-        gitCommits = logOutput.split('\n').map(line => {
-          const [hash, author, date, message] = line.split('|');
-          return { hash, author, date, message };
-        });
+      fs.writeFileSync(this.statusFile, JSON.stringify(statusObj, null, 2), 'utf8');
+    } catch {}
+  }
+
+  static getStatus(runtimeDir) {
+    const rDir = runtimeDir || path.join(process.env.HOME || '/home/cody', '.project-anchor');
+    const sFile = path.join(rDir, 'historical_status.json');
+    try {
+      if (fs.existsSync(sFile)) {
+        return JSON.parse(fs.readFileSync(sFile, 'utf8'));
       }
     } catch {}
 
-    // Find transcripts in ~/.claude or cwd
-    const transcriptSnippets = this.gatherRecentTranscriptSnippets();
+    const dossierPath = path.join(rDir, 'PROJECT_DOSSIER.md');
+    const graveyardPath = path.join(rDir, 'FAILURE_GRAVEYARD.md');
 
-    // Identify failure patterns and architectural decisions
-    const failureTraps = [];
-    const architecturalDecisions = [];
+    if (fs.existsSync(dossierPath) && fs.existsSync(graveyardPath)) {
+      try {
+        const stats = fs.statSync(dossierPath);
+        const gContent = fs.readFileSync(graveyardPath, 'utf8');
+        const trapCount = (gContent.match(/### Trap #/g) || []).length;
+        return {
+          status: 'completed',
+          completed_at: stats.mtime.toISOString(),
+          progress_pct: 100,
+          trapsCount: trapCount,
+          message: 'Project historical synthesis archive is complete and verified.'
+        };
+      } catch {}
+    }
 
-    gitCommits.forEach(c => {
-      const msg = (c.message || '').toLowerCase();
-      if (msg.includes('fix') || msg.includes('bug') || msg.includes('error') || msg.includes('revert') || msg.includes('workaround') || msg.includes('patch')) {
-        failureTraps.push({
-          source: `Commit ${c.hash} (${c.date})`,
-          summary: c.message,
-          lesson: `Watch out for recurring issues related to: ${c.message}`
-        });
-      } else if (msg.includes('feat') || msg.includes('arch') || msg.includes('refactor') || msg.includes('init') || msg.includes('add')) {
-        architecturalDecisions.push({
-          source: `Commit ${c.hash} (${c.date})`,
-          summary: c.message
-        });
-      }
+    return {
+      status: 'idle',
+      progress_pct: 0,
+      message: 'No project scan is currently active. Use /pscan or anchor-labs-projects scan to start.'
+    };
+  }
+
+  scanProjectHistory(cwd = process.cwd()) {
+    const startTime = new Date().toISOString();
+    this.writeStatus({
+      status: 'running',
+      started_at: startTime,
+      updated_at: startTime,
+      progress_pct: 10,
+      message: 'Analyzing git commit history and past transcripts...'
     });
 
-    transcriptSnippets.forEach(snip => {
-      if (snip.isFailure) {
-        failureTraps.push({
-          source: `Transcript: ${snip.source}`,
-          summary: snip.text.slice(0, 140),
-          lesson: 'Encountered during development session. Verify before re-implementing.'
-        });
-      }
-    });
+    try {
+      let gitCommits = [];
+      try {
+        const logOutput = execSync('git log -n 50 --format="%h|%an|%ad|%s" --date=short 2>/dev/null', { cwd, encoding: 'utf8' }).trim();
+        if (logOutput) {
+          gitCommits = logOutput.split('\n').map(line => {
+            const [hash, author, date, message] = line.split('|');
+            return { hash, author, date, message };
+          });
+        }
+      } catch {}
 
-    // Write PROJECT_DOSSIER.md
-    const dossierPath = path.join(this.runtimeDir, 'PROJECT_DOSSIER.md');
-    const dossierContent = `
+      this.writeStatus({
+        status: 'running',
+        started_at: startTime,
+        updated_at: new Date().toISOString(),
+        commitsScanned: gitCommits.length,
+        progress_pct: 50,
+        message: `Extracted ${gitCommits.length} git commits. Gathering transcript failure patterns...`
+      });
+
+      // Find transcripts in ~/.claude or cwd
+      const transcriptSnippets = this.gatherRecentTranscriptSnippets();
+
+      // Identify failure patterns and architectural decisions
+      const failureTraps = [];
+      const architecturalDecisions = [];
+
+      gitCommits.forEach(c => {
+        const msg = (c.message || '').toLowerCase();
+        if (msg.includes('fix') || msg.includes('bug') || msg.includes('error') || msg.includes('revert') || msg.includes('workaround') || msg.includes('patch')) {
+          failureTraps.push({
+            source: `Commit ${c.hash} (${c.date})`,
+            summary: c.message,
+            lesson: `Watch out for recurring issues related to: ${c.message}`
+          });
+        } else if (msg.includes('feat') || msg.includes('arch') || msg.includes('refactor') || msg.includes('init') || msg.includes('add')) {
+          architecturalDecisions.push({
+            source: `Commit ${c.hash} (${c.date})`,
+            summary: c.message
+          });
+        }
+      });
+
+      transcriptSnippets.forEach(snip => {
+        if (snip.isFailure) {
+          failureTraps.push({
+            source: `Transcript: ${snip.source}`,
+            summary: snip.text.slice(0, 140),
+            lesson: 'Encountered during development session. Verify before re-implementing.'
+          });
+        }
+      });
+
+      // Write PROJECT_DOSSIER.md
+      const dossierPath = path.join(this.runtimeDir, 'PROJECT_DOSSIER.md');
+      const dossierContent = `
 # Project Dossier & Architectural History
 Generated: ${new Date().toISOString()}
 Target Directory: \`${cwd}\`
@@ -78,11 +138,11 @@ ${architecturalDecisions.length > 0
 4. **Developer Safety**: Pre-tool guards verify working tree state prior to destructive git or filesystem actions.
 `.trim();
 
-    fs.writeFileSync(dossierPath, dossierContent, 'utf8');
+      fs.writeFileSync(dossierPath, dossierContent, 'utf8');
 
-    // Write FAILURE_GRAVEYARD.md
-    const graveyardPath = path.join(this.runtimeDir, 'FAILURE_GRAVEYARD.md');
-    const graveyardContent = `
+      // Write FAILURE_GRAVEYARD.md
+      const graveyardPath = path.join(this.runtimeDir, 'FAILURE_GRAVEYARD.md');
+      const graveyardContent = `
 # Failure Graveyard & Anti-Pattern Traps
 Generated: ${new Date().toISOString()}
 Target Directory: \`${cwd}\`
@@ -101,15 +161,38 @@ ${failureTraps.length > 0
 - [ ] Ensure non-destructive commands during automated tool runs.
 `.trim();
 
-    fs.writeFileSync(graveyardPath, graveyardContent, 'utf8');
+      fs.writeFileSync(graveyardPath, graveyardContent, 'utf8');
 
-    return {
-      dossierPath,
-      graveyardPath,
-      commitsScanned: gitCommits.length,
-      trapsCount: failureTraps.length,
-      decisionsCount: architecturalDecisions.length
-    };
+      const result = {
+        dossierPath,
+        graveyardPath,
+        commitsScanned: gitCommits.length,
+        trapsCount: failureTraps.length,
+        decisionsCount: architecturalDecisions.length
+      };
+
+      this.writeStatus({
+        status: 'completed',
+        started_at: startTime,
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        progress_pct: 100,
+        commitsScanned: gitCommits.length,
+        trapsCount: failureTraps.length,
+        decisionsCount: architecturalDecisions.length,
+        message: `Project scan complete: ${gitCommits.length} commits scanned, ${failureTraps.length} traps cataloged, ${architecturalDecisions.length} architectural decisions recorded.`
+      });
+
+      return result;
+    } catch (err) {
+      this.writeStatus({
+        status: 'error',
+        error: err.message,
+        failed_at: new Date().toISOString(),
+        message: `Project scan failed: ${err.message}`
+      });
+      throw err;
+    }
   }
 
   gatherRecentTranscriptSnippets() {
