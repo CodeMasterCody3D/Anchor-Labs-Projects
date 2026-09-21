@@ -23,7 +23,16 @@ class AuditWizard {
     try {
       const tmuxVer = execSync('tmux -V 2>/dev/null', { encoding: 'utf8' }).trim();
       const tmuxPath = execSync('which tmux 2>/dev/null', { encoding: 'utf8' }).trim();
-      checks.push({ component: 'tmux Daemon', status: 'OK', details: `${tmuxVer} (${tmuxPath})` });
+      let workerRunning = false;
+      try {
+        execSync('tmux has-session -t project-anchor-worker 2>/dev/null');
+        workerRunning = true;
+      } catch {}
+      checks.push({
+        component: 'tmux Daemon',
+        status: 'OK',
+        details: `${tmuxVer} (${tmuxPath}${workerRunning ? ', session \'project-anchor-worker\' RUNNING' : ', worker idle'})`
+      });
     } catch {
       checks.push({ component: 'tmux Daemon', status: 'FAIL', details: 'tmux is not installed! Run: sudo apt install tmux' });
     }
@@ -88,4 +97,54 @@ class AuditWizard {
   }
 }
 
+const RUNTIME_DIR = path.join(process.env.HOME || '/home/cody', '.project-anchor');
+const CONFIG_FILE = path.join(RUNTIME_DIR, 'config.json');
+const CONTEXT_DEFAULTS = { active_focus: 'General Development', active_milestone: 'v1.0 Milestone' };
+
+function loadActiveContext() {
+  try {
+    if (fs.existsSync(CONFIG_FILE)) {
+      const conf = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+      if (conf && (conf.active_focus || conf.active_milestone)) {
+        return { ...CONTEXT_DEFAULTS, ...conf };
+      }
+    }
+  } catch {}
+  return { ...CONTEXT_DEFAULTS };
+}
+
+function renderBanner(activeContext = null, cwd = process.cwd()) {
+  const wizard = new AuditWizard();
+  const audit = wizard.runFullAudit(cwd);
+  const ctx = (activeContext && activeContext.active_focus) ? activeContext : loadActiveContext();
+
+  let gitBranch = 'non-git';
+  let gitClean = true;
+  try {
+    gitBranch = execSync('git rev-parse --abbrev-ref HEAD 2>/dev/null', { cwd, encoding: 'utf8' }).trim() || 'non-git';
+    const st = execSync('git status --porcelain 2>/dev/null', { cwd, encoding: 'utf8' }).trim();
+    gitClean = !st;
+  } catch {}
+
+  let banner = `╔══════════════════════════════════════════════════════════════╗\n`;
+  banner += `║  ⚓ ANCHOR-LABS-PROJECTS SYSTEM & ENVIRONMENT AUDIT          ║\n`;
+  banner += `╚══════════════════════════════════════════════════════════════╝\n`;
+  banner += `Active Focus: "${ctx.active_focus}" | Milestone: ${ctx.active_milestone}\n`;
+  banner += `Git Status  : [${gitBranch}] ${gitClean ? '✔ Clean working tree' : '⚠ Uncommitted changes detected'}\n\n`;
+  banner += `[System & Infrastructure Checks]:\n`;
+  audit.checks.forEach(c => {
+    const badge = c.status === 'OK' ? '✔' : c.status === 'WARN' ? '⚠' : '✖';
+    banner += `  ${badge} ${c.component.padEnd(20)}: ${c.details}\n`;
+  });
+  banner += `\nVerdict: ${audit.summary}\n`;
+  return banner;
+}
+
+AuditWizard.loadActiveContext = loadActiveContext;
+AuditWizard.renderBanner = renderBanner;
+
 module.exports = AuditWizard;
+module.exports.AuditWizard = AuditWizard;
+module.exports.loadActiveContext = loadActiveContext;
+module.exports.renderBanner = renderBanner;
+module.exports.ACTIVE_CONTEXT_FILE = CONFIG_FILE;

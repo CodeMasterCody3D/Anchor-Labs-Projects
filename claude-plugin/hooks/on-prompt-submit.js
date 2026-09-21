@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const fs = require('fs');
-const readline = require('readline');
+const path = require('path');
+const { loadActiveContext } = require('../../server/audit-wizard');
 
 let inputData = '';
 process.stdin.on('data', chunk => {
@@ -15,11 +16,12 @@ process.stdin.on('end', () => {
       prompt = parsed.prompt || parsed.text || inputData;
     } catch {}
 
+    const ctx = loadActiveContext();
     const lower = prompt.toLowerCase();
     const hints = [];
 
     if (lower.includes('task') || lower.includes('todo') || lower.includes('backlog')) {
-      hints.push('Project-Anchor tip: Use `/ptask` or `project-anchor tasks` to query or update tasks.');
+      hints.push('Project-Anchor tip: Use `/ptask` or `anchor-labs-projects tasks` to query or update tasks.');
     }
     if (lower.includes('graph') || lower.includes('chart') || lower.includes('plot')) {
       hints.push('Project-Anchor tip: Use `/pgraph` to generate clean high-contrast SVG project charts.');
@@ -28,8 +30,10 @@ process.stdin.on('end', () => {
       hints.push('Project-Anchor tip: Use `/preconcile` to perform 3-way delta checks against git history.');
     }
 
+    let out = `\n[PROJECT-ANCHOR DIGEST]\nFocus: "${ctx.active_focus}" | Milestone: ${ctx.active_milestone}\n`;
     if (hints.length > 0) {
-      process.stdout.write(`\n[Anchor Context]: ${hints.join(' | ')}\n`);
+      out += `Context Guidance: ${hints.join(' | ')}\n`;
     }
+    process.stdout.write(out);
   } catch {}
 });
