@@ -2,7 +2,7 @@
   "mcpServers": {
     "anchor-labs-projects": {
       "command": "node",
-      "args": ["/home/cody/Anchor-Labs-Projects/server/mcp-server.js"]
+      "args": ["/home/cody/.project-anchor/server/mcp-server.js"]
     }
   }
 }

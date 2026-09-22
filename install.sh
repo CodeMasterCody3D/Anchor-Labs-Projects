@@ -80,28 +80,51 @@ ensure_tmux() {
 ensure_tmux
 
 # 3. Create Runtime Dirs
+mkdir -p "${RUNTIME_DIR}/server"
+mkdir -p "${RUNTIME_DIR}/bin"
+mkdir -p "${RUNTIME_DIR}/daemon"
 mkdir -p "${RUNTIME_DIR}/graphs"
 mkdir -p "${BIN_DIR}"
 
-# 4. Symlink CLI
+# 4. Synchronize Executables & Server
+cp -r "${REPO_DIR}/server/"* "${RUNTIME_DIR}/server/"
+cp -r "${REPO_DIR}/bin/"* "${RUNTIME_DIR}/bin/"
+cp -r "${REPO_DIR}/daemon/"* "${RUNTIME_DIR}/daemon/"
+
 chmod +x "${REPO_DIR}/bin/project-anchor"
 chmod +x "${REPO_DIR}/server/"*.js
 chmod +x "${REPO_DIR}/daemon/"*.js
 chmod +x "${REPO_DIR}/claude-plugin/hooks/"*.js
+chmod +x "${RUNTIME_DIR}/bin/project-anchor"
+chmod +x "${RUNTIME_DIR}/server/"*.js
+chmod +x "${RUNTIME_DIR}/daemon/"*.js
 
-ln -sf "${REPO_DIR}/bin/project-anchor" "${BIN_DIR}/anchor-labs-projects"
-ln -sf "${REPO_DIR}/bin/project-anchor" "${BIN_DIR}/project-anchor"
+ln -sf "${RUNTIME_DIR}/bin/project-anchor" "${BIN_DIR}/anchor-labs-projects"
+ln -sf "${RUNTIME_DIR}/bin/project-anchor" "${BIN_DIR}/project-anchor"
 echo -e "\x1b[32m✔ Symlinked CLIs:\x1b[0m ${BIN_DIR}/anchor-labs-projects, ${BIN_DIR}/project-anchor"
 
-# 5. Install Claude Code Skills
+# 5. Install & Configure Claude Code Plugin
 CLAUDE_SKILLS_DIR="${HOME}/.claude/skills/project-anchor"
-mkdir -p "${CLAUDE_SKILLS_DIR}"
-cp -r "${REPO_DIR}/claude-plugin/skills/"* "${CLAUDE_SKILLS_DIR}/"
-echo -e "\x1b[32m✔ Claude Code slash commands installed to:\x1b[0m ${CLAUDE_SKILLS_DIR}"
+mkdir -p "$(dirname "${CLAUDE_SKILLS_DIR}")"
+
+cat <<EOF > "${REPO_DIR}/claude-plugin/.mcp.json"
+{
+  "mcpServers": {
+    "anchor-labs-projects": {
+      "command": "node",
+      "args": ["${RUNTIME_DIR}/server/mcp-server.js"]
+    }
+  }
+}
+EOF
+cp "${REPO_DIR}/claude-plugin/.mcp.json" "${RUNTIME_DIR}/.mcp.json"
+
+ln -sfn "${REPO_DIR}/claude-plugin" "${CLAUDE_SKILLS_DIR}"
+echo -e "\x1b[32m✔ Claude Code plugin registered at:\x1b[0m ${CLAUDE_SKILLS_DIR}"
 
 # 6. Verify Installation
 echo -e "\n\x1b[1mRunning health verification...\x1b[0m"
-"${REPO_DIR}/bin/project-anchor" doctor
+"${RUNTIME_DIR}/bin/project-anchor" doctor
 
 echo -e "\x1b[32m✔ Anchor-Labs-Projects successfully installed!\x1b[0m"
 echo "  Run 'anchor-labs-projects status' or 'anchor-labs-projects help' to get started."

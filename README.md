@@ -148,7 +148,7 @@ Anchor-Labs-Projects includes a Model Context Protocol (MCP) server exposing 17 
   "mcpServers": {
     "anchor-labs-projects": {
       "command": "node",
-      "args": ["/home/cody/Anchor-Labs-Projects/server/mcp-server.js"]
+      "args": ["${HOME}/.project-anchor/server/mcp-server.js"]
     }
   }
 }

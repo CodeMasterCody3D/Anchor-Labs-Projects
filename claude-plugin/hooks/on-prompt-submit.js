@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 const fs = require('fs');
-const path = require('path');
-const { loadActiveContext } = require('../../server/audit-wizard');
+const resolveServer = require('./resolve-server');
+
+const auditWizardMod = resolveServer('audit-wizard');
+const loadActiveContext = (auditWizardMod && auditWizardMod.loadActiveContext) 
+  ? auditWizardMod.loadActiveContext 
+  : () => ({ active_focus: 'General Development', active_milestone: 'v1.0 Milestone' });
 
 let inputData = '';
 process.stdin.on('data', chunk => {

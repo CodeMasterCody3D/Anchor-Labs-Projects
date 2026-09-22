@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-const ProjectManager = require('../../server/project-manager');
+const resolveServer = require('./resolve-server');
+const ProjectManager = resolveServer('project-manager');
 
 let input = '';
 process.stdin.on('data', chunk => {
@@ -17,7 +18,7 @@ process.stdin.on('end', () => {
     } catch {}
 
     // Check if tool execution was a test runner
-    if (/npm\s+test|pytest|cargo\s+test|go\s+test/i.test(commandLine)) {
+    if (/npm\s+test|pytest|cargo\s+test|go\s+test/i.test(commandLine) && ProjectManager) {
       const pm = new ProjectManager();
       
       // Match common test patterns like "X passed, Y failed"
