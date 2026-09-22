@@ -176,6 +176,27 @@ const TOOLS = [
       },
       required: ['name']
     }
+  },
+  {
+    name: 'project_catchup_chat',
+    description: 'Ingests today chat messages, extracts verified software engineering findings, updates CONFIRMED_FINDINGS.md and ACTIVE_PLAN.md.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        date: { type: 'string', description: 'Optional target date YYYY-MM-DD (defaults to today)' },
+        cwd: { type: 'string', description: 'Optional project directory' }
+      }
+    }
+  },
+  {
+    name: 'project_get_active_plan',
+    description: 'Retrieves active plan, latest validated findings, and minimality guard directives.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        cwd: { type: 'string', description: 'Optional project directory' }
+      }
+    }
   }
 ];
 
@@ -292,6 +313,36 @@ Session Closing Notes:
     }
     case 'project_remove_tool': {
       return catalog.removeTool(args.name);
+    }
+    case 'project_catchup_chat': {
+      const ChatIngester = require('./chat-ingester');
+      const ingester = new ChatIngester();
+      const res = ingester.ingestSession(cwd, null, args.date || null);
+      let out = `✔ Project Chat Ingestion Complete for [${res.project}]\n`;
+      out += `• Session: ${res.session_id}\n`;
+      out += `• Turns Scanned: ${res.turns_scanned}\n`;
+      out += `• Confirmed Findings: ${res.findings_count} recorded in CONFIRMED_FINDINGS.md\n`;
+      if (res.latest_finding) {
+        out += `\nLatest Confirmed Finding:\n${res.latest_finding.text}\n`;
+      }
+      out += `\nActive Plan:\n${res.latest_plan}\n`;
+      return { report: out };
+    }
+    case 'project_get_active_plan': {
+      const runtimeDir = path.join(process.env.HOME || '/home/cody', '.project-anchor');
+      const planFile = path.join(runtimeDir, 'ACTIVE_PLAN.md');
+      const findingsFile = path.join(runtimeDir, 'CONFIRMED_FINDINGS.md');
+      let out = '';
+      if (fs.existsSync(planFile)) {
+        out += fs.readFileSync(planFile, 'utf8') + '\n\n';
+      }
+      if (fs.existsSync(findingsFile)) {
+        out += fs.readFileSync(findingsFile, 'utf8');
+      }
+      if (!out) {
+        out = 'No active plan recorded yet. Run project_catchup_chat to ingest.';
+      }
+      return { report: out };
     }
     default:
       throw new Error(`Unknown tool: ${name}`);
